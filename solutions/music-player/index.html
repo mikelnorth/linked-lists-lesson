@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Music Player: Finished Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="player">
+    <h1>Music Player</h1>
+    <p class="sub">A playlist is a doubly linked list. Every song knows the song before it and the song after it.</p>
+
+    <section class="now-playing" id="nowPlaying">
+      <p class="eyebrow" id="playState">Currently playing</p>
+      <p class="title" id="songTitle">—</p>
+      <p class="artist" id="songArtist"></p>
+    </section>
+
+    <div class="controls">
+      <button id="prevBtn" type="button">⏮ Previous</button>
+      <button id="playBtn" type="button" class="primary">▶ Play</button>
+      <button id="nextBtn" type="button">Next ⏭</button>
+      <button id="playAllBtn" type="button" class="secondary">Play all</button>
+    </div>
+
+    <div class="extras">
+      <label class="toggle">
+        <input type="checkbox" id="repeatToggle">
+        Repeat <span class="muted">(stretch goal: wrap around, like a circular list)</span>
+      </label>
+      <button id="removeBtn" type="button" class="danger">Remove current song <span class="muted">(stretch)</span></button>
+    </div>
+
+    <form id="addForm" class="add" autocomplete="off">
+      <input id="newTitle" placeholder="Song title" required aria-label="song title">
+      <input id="newArtist" placeholder="Artist" aria-label="artist">
+      <button type="submit">Add to playlist</button>
+    </form>
+
+    <p id="status" class="status" aria-live="polite"></p>
+
+    <section class="panel">
+      <h2>The playlist as nodes</h2>
+      <div id="viz" class="viz"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Log</h2>
+      <pre id="log" class="log"></pre>
+    </section>
+  </main>
+
+  <script src="visualize.js"></script>
+  <script src="player.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

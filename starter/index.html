@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linked Lists: Follow Along</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Linked Lists <span class="muted">follow-along</span></h1>
+    <p class="hint">
+      You edit <code>linked-list.js</code>. Save, then refresh this page.
+      Open the DevTools console (<kbd>Cmd</kbd>+<kbd>Opt</kbd>+<kbd>J</kbd> on Mac, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> on Windows)
+      and try <code>list.add(5)</code>. The picture below updates by itself.
+    </p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Playground</h2>
+      <form id="controls" autocomplete="off">
+        <input id="value" type="text" placeholder="value (try 10)" aria-label="value">
+        <button type="button" data-op="add">add (end)</button>
+        <button type="button" data-op="prepend">prepend (front)</button>
+        <button type="button" data-op="delete">delete</button>
+        <button type="button" data-op="search">search</button>
+        <button type="button" data-op="traverse">traverse</button>
+        <button type="button" data-op="reset" class="secondary">reset list</button>
+      </form>
+      <p id="status" class="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel">
+      <h2>The list right now</h2>
+      <div id="viz" class="viz" aria-live="polite"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Log</h2>
+      <pre id="log" class="log"></pre>
+    </section>
+  </main>
+
+  <!-- Order matters: the visualizer and your list must load before app.js wires the buttons. -->
+  <script src="visualize.js"></script>
+  <script src="linked-list.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

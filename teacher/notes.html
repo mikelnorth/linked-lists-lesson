@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linked Lists: Teacher Notes</title>
+<style>
+  :root {
+    --bg: #0f1218; --panel: #161a23; --panel-2: #1c2130; --ink: #e8eaf0; --muted: #9aa3b5; --line: #2a3140;
+    --accent: #60a5fa; --say: #a78bfa; --do: #34d399; --ask: #fbbf24; --watch: #f87171; --check: #38bdf8; --note: #fb923c;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --fs: 17px;
+    --top: 56px;
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f6fb; --panel: #ffffff; --panel-2: #eef1f8; --ink: #141821; --muted: #5d6475; --line: #d9dde8;
+    --accent: #1f6feb; --say: #6d28d9; --do: #047857; --ask: #b45309; --watch: #b91c1c; --check: #0369a1; --note: #c2410c;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: var(--fs); scroll-behavior: smooth; }
+  body { margin: 0; font-family: var(--sans); background: var(--bg); color: var(--ink); line-height: 1.5; }
+  a { color: var(--accent); }
+  code, pre, kbd { font-family: var(--mono); }
+  code { background: color-mix(in srgb, var(--ink) 10%, transparent); padding: 1px 6px; border-radius: 6px; font-size: .92em; }
+  kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; font-size: .85em; background: var(--panel-2); }
+
+  /* ---- Top bar ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
+    padding: 8px 14px; background: color-mix(in srgb, var(--panel) 92%, transparent);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+  }
+  .topbar h1 { font-size: 1rem; margin: 0; letter-spacing: .02em; white-space: nowrap; }
+  .tools { display: flex; gap: 6px; padding: 0 10px 10px; }
+  .tools button { font: inherit; font-size: .8rem; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); cursor: pointer; }
+  .topbar h1 small { color: var(--muted); font-weight: 400; }
+  .clock { font-family: var(--mono); font-size: 1.4rem; font-weight: 700; min-width: 5ch; }
+  .plan { font-size: .9rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; }
+  .plan b { color: var(--ink); }
+  .pace { font-size: .85rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); }
+  .pace.ok { color: var(--do); border-color: var(--do); }
+  .pace.behind { color: var(--watch); border-color: var(--watch); }
+  .pace.ahead { color: var(--check); border-color: var(--check); }
+  .spacer { flex: 1; }
+  .topbar button {
+    font: inherit; font-size: .85rem; padding: 6px 12px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); cursor: pointer;
+  }
+  .topbar button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+
+  /* ---- Layout ---- */
+  .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 0; }
+  nav.timeline {
+    position: sticky; top: var(--top); align-self: start; height: calc(100vh - var(--top)); overflow: auto;
+    padding: 14px 10px; border-right: 1px solid var(--line);
+  }
+  nav.timeline a {
+    display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: baseline;
+    padding: 7px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: .88rem;
+  }
+  nav.timeline a .t { font-family: var(--mono); color: var(--muted); font-size: .8rem; }
+  nav.timeline a:hover { background: var(--panel-2); }
+  nav.timeline a.active { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  nav.timeline a.plan-now::after { content: "plan"; font-size: .7rem; color: var(--do); margin-left: 6px; }
+  nav.timeline a.exercise { color: var(--do); }
+  main { padding: 20px 28px 50vh; max-width: 980px; }
+
+  /* ---- Sections ---- */
+  section.step { padding: 26px 0 8px; border-bottom: 1px solid var(--line); scroll-margin-top: calc(var(--top) + 8px); }
+  .step-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .step-head h2 { margin: 0; font-size: 1.45rem; }
+  .slide { font-family: var(--mono); font-size: .8rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 8px; }
+  .time { font-family: var(--mono); font-size: .85rem; color: var(--muted); }
+  .goal { color: var(--muted); margin: 0 0 14px; font-style: italic; }
+
+  .block { border-left: 4px solid var(--line); padding: 10px 16px; margin: 12px 0; border-radius: 0 10px 10px 0; background: var(--panel); }
+  .block > .label { display: block; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+  .block p { margin: 6px 0; }
+  .block ul, .block ol { margin: 6px 0; padding-left: 22px; }
+  .block li { margin: 3px 0; }
+  .say { border-color: var(--say); } .say .label { color: var(--say); }
+  .do { border-color: var(--do); } .do .label { color: var(--do); }
+  .ask { border-color: var(--ask); } .ask .label { color: var(--ask); }
+  .watch { border-color: var(--watch); } .watch .label { color: var(--watch); }
+  .checkpoint { border-color: var(--check); background: color-mix(in srgb, var(--check) 10%, var(--panel)); } .checkpoint .label { color: var(--check); }
+  .note { border-color: var(--note); } .note .label { color: var(--note); }
+  .transition { color: var(--muted); font-style: italic; margin: 14px 0 6px; }
+  details { margin: 6px 0; } summary { cursor: pointer; color: var(--muted); }
+
+  pre.code {
+    margin: 10px 0; padding: 14px 16px; border-radius: 10px; background: var(--panel-2);
+    border: 1px solid var(--line); overflow: auto; font-size: .92rem; line-height: 1.5; tab-size: 2;
+  }
+  pre.code code { background: none; padding: 0; border-radius: 0; font-size: inherit; }
+  pre.code .c { color: var(--muted); font-style: italic; }
+  pre.code .s { color: var(--do); }
+  pre.code .k { color: var(--say); font-weight: 600; }
+  pre.code .n { color: var(--ask); }
+  .why { margin: 4px 0 10px; padding-left: 22px; color: var(--muted); }
+  .why li { margin: 3px 0; }
+  .why b { color: var(--ink); font-family: var(--mono); font-weight: 600; font-size: .9em; }
+
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: .95rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+
+  .checklist label { display: flex; gap: 10px; align-items: flex-start; padding: 4px 0; }
+  .checklist input { margin-top: 5px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .refs { font-size: .85rem; color: var(--muted); }
+  .refs a { word-break: break-all; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } nav.timeline { display: none; } .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Day 15: Linked Lists <small>teacher screen</small></h1>
+  <div class="clock" id="clock">00:00</div>
+  <div class="plan" id="plan">Press <b>Start class</b> when you begin slide 1.</div>
+  <div class="pace" id="pace" hidden></div>
+  <div class="spacer"></div>
+  <button id="startBtn" class="primary">Start class</button>
+  <button id="resetBtn">Reset clock</button>
+</header>
+
+<div class="layout">
+<nav class="timeline" aria-label="Lesson timeline">
+  <div class="tools">
+    <button id="themeBtn" title="Toggle light / dark (T)">Theme</button>
+    <button id="smaller" title="Smaller text (−)">A−</button>
+    <button id="bigger" title="Bigger text (+)">A+</button>
+  </div>
+  <div id="timeline"></div>
+</nav>
+
+<main>
+
+<!-- ============================================================ -->
+<section class="step" id="s00" data-slide="Prep" data-title="Before class" data-start="-1" data-end="-1">
+  <div class="step-head"><span class="slide">Before class</span><h2>Pre-flight</h2></div>
+
+  <div class="two">
+    <div class="block do"><span class="label">Shared screen (students see this)</span>
+      <div class="checklist">
+        <label><input type="checkbox"> Browser tab 1: <code>starter/index.html</code>, zoom 125 to 150 percent, DevTools console docked to the right.</label>
+        <label><input type="checkbox"> Browser tab 2: <code>solutions/index.html</code> with a few values already added. Call this the "demo" tab; use it during slides 3 and 4.</label>
+        <label><input type="checkbox"> Browser tab 3: <code>solutions/music-player/index.html</code>. Use it during slides 5, 6, 11 and to frame slide 12.</label>
+        <label><input type="checkbox"> Editor: <code>starter/linked-list.js</code> open, font size 18 or more, sidebar hidden so the <code>solutions</code> folder is not visible.</label>
+        <label><input type="checkbox"> Slide deck open in presentation mode.</label>
+      </div>
+    </div>
+    <div class="block do"><span class="label">This screen (private)</span>
+      <div class="checklist">
+        <label><input type="checkbox"> This page. Keys: <kbd>→</kbd>/<kbd>←</kbd> next/previous section, <kbd>S</kbd> start/pause clock, <kbd>T</kbd> theme, <kbd>+</kbd>/<kbd>−</kbd> text size.</label>
+        <label><input type="checkbox"> Click <b>Start class</b> as you open slide 1. The green "plan" marker in the sidebar shows where the 90 minute plan says you should be; the pill in the top bar says ahead or behind.</label>
+        <label><input type="checkbox"> Students have the folder (zip or git clone) and can open <code>starter/index.html</code> in a browser. No install needed.</label>
+        <label><input type="checkbox"> Confirm you are sharing only the other screen.</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="block note"><span class="label">Two things in the deck to be ready for</span>
+    <ul>
+      <li><b>Slide 10 says arrays are sized "at compile time".</b> True for C-style arrays, not for JavaScript, where arrays grow on their own. The honest framing: JavaScript hides the reallocation from you, but the engine still pays for it, and the cost model (insert at front is O(n) in an array, O(1) in a list) is what matters. There is a ready-made explanation in the slide 10 section below.</li>
+      <li><b>Slide 9's snippet uses <code>this.start</code> and <code>current.data</code></b> while slides 7 and 8 use <code>head</code> and <code>value</code>. If a student notices, say: "same idea, different names, the deck borrowed from two sources. We use <code>head</code> and <code>value</code>."</li>
+    </ul>
+  </div>
+
+  <div class="block ask"><span class="label">Lesson arc in one breath</span>
+    <p>What a node is (5 min) → three shapes of list (10 min) → build a singly linked list together (30 min) → why it matters vs arrays (7 min) → build a doubly linked music player, half together, half solo (28 min) → recap and exit ticket (5 min).</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s02" data-slide="1–2" data-title="Introduction" data-start="0" data-end="5">
+  <div class="step-head"><span class="slide">Slides 1–2</span><h2>Introduction to Linked Lists</h2><span class="time">0:00 – 0:05 · 5 min</span></div>
+  <p class="goal">Goal: students can say "a linked list is nodes, each with data and a pointer to the next one" and know why we care.</p>
+
+  <div class="block ask"><span class="label">Hook (before the script)</span>
+    <p>"Everyone has used an array. Suppose you have an array of a million items and you need to insert one new item at the very front. What has to happen to the other million?" <em>(They all shift over by one.)</em> "Today's data structure makes that a two-line operation, no matter how big the list is. The trade-off is what we are going to find out."</p>
+  </div>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Today, we're diving into the world of linked lists, a fundamental data structure in computer science.</p>
+    <p>Linked lists consist of individual elements called nodes. Each node holds two key pieces of information: the actual data we want to store and a "link" or pointer to the next node in the sequence.</p>
+    <p>Linked lists are particularly valuable when dealing with dynamic data, where the size and structure of the data can change during program execution. They allow us to efficiently manage and manipulate data without the limitations of fixed-size arrays.</p>
+    <p>In the upcoming slides, we will delve deeper into the structure, types, and applications of linked lists. Let's begin by understanding the basic structure of a linked list.</p>
+  </div>
+
+  <div class="block do"><span class="label">Do</span>
+    <p>Nothing on the shared screen yet beyond the slide. Tell students to open <code>starter/index.html</code> in a browser now so it is ready by slide 7.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s03" data-slide="3" data-title="Basic structure" data-start="5" data-end="10">
+  <div class="step-head"><span class="slide">Slide 3</span><h2>What is a Linked List? Basic Structure</h2><span class="time">0:05 – 0:10 · 5 min</span></div>
+  <p class="goal">Goal: vocabulary locked in: node, value, next, head, null.</p>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Now that we have a basic understanding of what linked lists are, let's dive into their structure.</p>
+    <p>At its core, a linked list is a sequence of elements called nodes. Each node contains two essential parts: the data itself and a reference, or a "link," to the next node in the list. Think of it like a treasure hunt, where each clue (node) contains the treasure (data) and a pointer to the next location (next node).</p>
+    <p>This structure allows for dynamic memory allocation, meaning that the linked list can grow or shrink as needed during runtime. We'll see later on how this differs from arrays, which have a fixed size.</p>
+    <p>You can see how each node holds some data and a pointer to the subsequent node. This chain of nodes linked together forms the linked list.</p>
+  </div>
+
+  <div class="block do"><span class="label">Do: switch to the demo tab (<code>solutions/index.html</code>)</span>
+    <ol>
+      <li>Press <b>reset list</b> so it shows <code>head → null</code>. "This is an empty list. The list only knows one thing: where it starts. Right now that is nothing."</li>
+      <li>Type <code>clue 1</code>, add. Then <code>clue 2</code>, <code>clue 3</code>. Point at each box: value cell, next cell, the arrow, and the final <code>null</code>.</li>
+      <li>"The word for 'the first node' is <b>head</b>. The word for 'there is nothing after me' is <b>null</b>."</li>
+    </ol>
+  </div>
+
+  <div class="block ask"><span class="label">Ask</span>
+    <p>"If I only hand you the head, how do you get to clue 3?" <em>Follow next, then follow next again. There is no shortcut; that is the whole personality of this data structure.</em></p>
+  </div>
+
+  <p class="transition">Next, we'll explore the different types of linked lists, starting with the singly linked list.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s04" data-slide="4" data-title="Singly linked" data-start="10" data-end="13">
+  <div class="step-head"><span class="slide">Slide 4</span><h2>Types: Singly Linked List</h2><span class="time">0:10 – 0:13 · 3 min</span></div>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Okay, let's dive into the first type of linked list: the singly linked list.</p>
+    <p>As you can see in the diagram, the fundamental unit here is the node. Each node holds a piece of data, and importantly, a reference or a pointer to the next node in the sequence.</p>
+    <p>The beauty of a singly linked list lies in its simplicity. It's relatively straightforward to implement and traverse. You start at the head, follow the 'next' pointers from node to node, until you reach the end, which is usually indicated by a 'null' pointer.</p>
+  </div>
+
+  <div class="block do"><span class="label">Do</span>
+    <p>Still on the demo tab: "What you saw a minute ago was a singly linked list. One arrow per node, one direction only." Press <b>traverse</b> once so the log shows the visiting order.</p>
+  </div>
+
+  <div class="block ask"><span class="label">Ask</span>
+    <p>"Standing on clue 2, can you get back to clue 1?" <em>No. Nothing points backwards. Hold that thought for the next slide.</em></p>
+  </div>
+  <p class="refs">Ref: <a href="https://medium.com/@mohitgadhavi1/diving-into-linked-lists-types-and-examples-in-javascript-eb3023f23464">Diving into linked lists: types and examples in JavaScript</a></p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s05" data-slide="5" data-title="Doubly linked" data-start="13" data-end="17">
+  <div class="step-head"><span class="slide">Slide 5</span><h2>Types: Doubly Linked List</h2><span class="time">0:13 – 0:17 · 4 min</span></div>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Now, let's delve into another type of linked list: the doubly linked list.</p>
+    <p>In a doubly linked list, each node not only stores data but also maintains two references: one to the next node and another to the previous node. This bidirectional referencing allows for traversal in both forward and backward directions, offering more flexibility in navigating the list.</p>
+    <p>However, this added functionality comes at a cost. Doubly linked lists require more memory compared to singly linked lists because each node needs to store an additional pointer. This increased memory usage is the trade-off for the convenience of bidirectional traversal.</p>
+  </div>
+
+  <div class="block do"><span class="label">Do: switch to the music player tab (<code>solutions/music-player/index.html</code>)</span>
+    <ol>
+      <li>Point at a node: it now has a <b>prev</b> cell and a <b>next</b> cell, and the arrows between nodes are two-headed.</li>
+      <li>Press <b>Next</b> twice, then <b>Previous</b>. The highlighted node moves both ways. "That backwards move was impossible one slide ago."</li>
+      <li>Do not explain the code yet. "You are building this one yourselves in about 45 minutes."</li>
+    </ol>
+  </div>
+
+  <div class="block ask"><span class="label">Ask</span>
+    <p>"What did we pay for the Previous button?" <em>One extra pointer per node, and every insert or delete now has to fix two pointers instead of one.</em></p>
+  </div>
+  <p class="transition">Next, we'll explore circular linked lists and how they differ from singly and doubly linked lists.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s06" data-slide="6" data-title="Circular" data-start="17" data-end="20">
+  <div class="step-head"><span class="slide">Slide 6</span><h2>Types: Circular Linked List</h2><span class="time">0:17 – 0:20 · 3 min</span></div>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Now, let's explore another type of linked list: the circular linked list.</p>
+    <p>In a circular linked list, the last node doesn't point to null; instead, it points back to the first node, creating a loop. This continuous structure allows for traversal without end.</p>
+    <p>Circular linked lists are particularly useful in applications like scheduling algorithms, where tasks need to be processed in a loop, or in managing playlists where the music should loop back to the beginning after the last song. We can think of a YouTube playlist with the repeat button on.</p>
+  </div>
+
+  <div class="block do"><span class="label">Do</span>
+    <ol>
+      <li>On the music player tab press <b>Next</b> until the last song, then once more: it stays put and the status says "already at the last song".</li>
+      <li>Tick <b>Repeat</b>, press <b>Next</b> again: it wraps to the first song. "Repeat mode is circular behaviour. Our player fakes it with an if-statement; a true circular list makes the last node's next pointer literally point at the head."</li>
+    </ol>
+  </div>
+
+  <div class="block watch"><span class="label">Watch for</span>
+    <p>"How do you know when to stop traversing a circular list?" is a good question. Answer: you stop when you get back to the node you started on, not when you hit null, because you never hit null. (The visualizer on the page detects the loop the same way.)</p>
+  </div>
+  <p class="transition">Next, we will start creating a linked list in JavaScript. Switch the shared screen to the editor and the <code>starter/index.html</code> tab.</p>
+  <p class="refs">Ref: <a href="https://dev.to/emmanuelayinde/circular-linked-lists-demystified-from-novice-to-node-master-4d5i">Circular linked lists demystified</a></p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s07" data-slide="7" data-title="Code: Node + add" data-start="20" data-end="32">
+  <div class="step-head"><span class="slide">Slide 7</span><h2>Creating a Linked List in JavaScript</h2><span class="time">0:20 – 0:32 · 12 min · code-along</span></div>
+  <p class="goal">Goal: everyone has a working <code>Node</code>, <code>LinkedList</code> and <code>add()</code>, and has seen three boxes appear on their own screen.</p>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Okay, let's dive into how we actually create a linked list using JavaScript.</p>
+    <p>First, we need to define the basic building block: the Node. Each node will hold a piece of data and a pointer, which we'll call 'next', that points to the next node in the list.</p>
+    <p>Next, we'll create the LinkedList class itself. This class will contain methods for adding new nodes, removing existing nodes, and searching for specific nodes within the list.</p>
+    <p>This structure, the Node and the LinkedList class, is really the backbone for managing data dynamically.</p>
+  </div>
+
+  <div class="block do"><span class="label">Do: set the scene (1 min)</span>
+    <p>Show <code>starter/linked-list.js</code>. "This file is yours. The page already has buttons and a drawing routine; they call methods on your class. Right now the page says 'Step 2: define class LinkedList', because there is nothing here yet. Type along with me; after every step we save, refresh, and test."</p>
+  </div>
+
+  <div class="block do"><span class="label">Type: Step 1, the Node (3 min)</span></div>
+<pre class="code"><code>class Node {
+  constructor(value) {
+    this.value = value; // the data we store
+    this.next = null;   // pointer to the next node. null = "nothing after me"
+  }
+}</code></pre>
+  <ul class="why">
+    <li><b>this.next = null</b>: every node is born as the last node. Something else will decide what comes after it.</li>
+    <li>Save, refresh, then in the console: <code>const a = new Node(1); const b = new Node(2); a.next = b; a</code>. Expand the object: a Node containing a Node. "That is all a linked list is. Objects pointing at objects."</li>
+  </ul>
+
+  <div class="block watch"><span class="label">Watch for</span>
+    <p>The browser already has a built-in <code>Node</code> (the DOM one). Declaring <code>class Node</code> at the top of the file shadows it, which is fine. If a student sees "Illegal constructor" they have not saved or refreshed and are calling the built-in one. The page prints a hint for this case.</p>
+  </div>
+
+  <div class="block do"><span class="label">Type: Step 2, the list (2 min)</span></div>
+<pre class="code"><code>class LinkedList {
+  constructor() {
+    this.head = null; // the only node the list remembers directly
+    this.size = 0;
+  }
+}</code></pre>
+  <ul class="why">
+    <li>Refresh: the page now draws <code>head → null</code> and the status turns green. "The list stores one pointer. Everything else is reachable by walking."</li>
+  </ul>
+
+  <div class="block do"><span class="label">Type: Step 3, add(value) inside the class (5 min)</span></div>
+<pre class="code"><code>add(value) {
+  const newNode = new Node(value);
+
+  if (!this.head) {          // empty list: the new node IS the list
+    this.head = newNode;
+    this.size++;
+    return this;
+  }
+
+  let current = this.head;   // start at the beginning...
+  while (current.next) {     // ...and walk until the last node
+    current = current.next;
+  }
+  current.next = newNode;    // hook the new node onto the end
+  this.size++;
+  return this;               // lets us chain: list.add(1).add(2)
+}</code></pre>
+  <ul class="why">
+    <li><b>if (!this.head)</b>: narrate the empty case first. "Special cases first is a habit that will save you in every linked list method."</li>
+    <li><b>while (current.next)</b>: we want to stop ON the last node, so we test whether there is a next one, not whether current exists. Compare with <code>while (current)</code>, which would run off the end and leave <code>current</code> null.</li>
+    <li><b>current = current.next</b>: this is the "follow the arrow" move. Say it out loud every time it appears today.</li>
+  </ul>
+
+  <div class="block checkpoint"><span class="label">Checkpoint 1</span>
+    <p>Everyone: save, refresh, add <b>10</b>, <b>20</b>, <b>30</b> with the button. Three boxes, arrows between them, null at the end. Console: <code>list.size</code> is 3 and <code>list.head.next.value</code> is 20. Thumbs up before moving on.</p>
+  </div>
+
+  <div class="block ask"><span class="label">Ask</span>
+    <p>"If the list had a thousand nodes, how many arrows does add() follow?" <em>About a thousand. Appending is O(n) in this design. We will fix that in the music player with a tail pointer.</em></p>
+  </div>
+
+  <div class="block watch"><span class="label">Common mistakes</span>
+    <ul>
+      <li>Forgetting <code>this.</code> in front of <code>head</code> (ReferenceError: head is not defined).</li>
+      <li>Writing <code>current.next = current.next</code> or reassigning <code>this.head</code> inside the loop (the list loses nodes). Fix by re-reading: only the LAST line changes a pointer.</li>
+      <li>Defining <code>add</code> outside the class braces. The page will say "Not implemented yet: add()".</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s08" data-slide="8" data-title="Code: insert + delete" data-start="32" data-end="42">
+  <div class="step-head"><span class="slide">Slide 8</span><h2>Operations: Insertion and Deletion</h2><span class="time">0:32 – 0:42 · 10 min · code-along</span></div>
+  <p class="goal">Goal: students can insert at the front in O(1) and delete by value, including the head special case.</p>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Now, let's delve into the fundamental operations we can perform on linked lists: insertion and deletion.</p>
+    <p>Insertion allows us to add new nodes to the list, and this can occur at the beginning, end, or even in the middle of the list. Deletion, on the other hand, removes nodes, either by specifying the value we want to remove or by indicating the position of the node in the list.</p>
+    <p>We just did "end". Let's do "beginning", which is the surprising one.</p>
+  </div>
+
+  <div class="block do"><span class="label">Type: Step 4, prepend(value) (3 min)</span></div>
+<pre class="code"><code>prepend(value) {
+  const newNode = new Node(value);
+  newNode.next = this.head;  // the new node points at the old first node
+  this.head = newNode;       // and becomes the new first node
+  this.size++;
+  return this;
+}</code></pre>
+  <ul class="why">
+    <li><b>Order matters.</b> Ask: "What breaks if I swap those two lines?" <em>You overwrite head before saving it; the whole old list is unreachable.</em></li>
+    <li>No loop. "This is the two-line insert I promised in the hook. Same cost for a list of three or three million." Prepend <b>5</b> and watch it appear on the left.</li>
+  </ul>
+
+  <div class="block do"><span class="label">Type: Step 5, delete(value) (6 min)</span></div>
+<pre class="code"><code>delete(value) {
+  if (!this.head) return false;             // nothing to delete
+
+  if (this.head.value === value) {          // special case: the head is the match
+    this.head = this.head.next;
+    this.size--;
+    return true;
+  }
+
+  let current = this.head;
+  while (current.next &amp;&amp; current.next.value !== value) {
+    current = current.next;                 // stop at the node BEFORE the match
+  }
+
+  if (!current.next) return false;          // walked off the end: not found
+
+  current.next = current.next.next;         // skip over the matched node
+  this.size--;
+  return true;
+}</code></pre>
+  <ul class="why">
+    <li><b>Draw it before typing it.</b> On the page: list 5 → 10 → 20 → 30. "To remove 20, who has to change? Not 20. The node before it: 10's next must jump to 30." That is why the loop stops one node early.</li>
+    <li><b>Head special case:</b> nobody is "before" the head, so there is no node whose next we can rewire. We move head itself instead.</li>
+    <li><b>current.next &amp;&amp; ...</b>: the left side guards the right side. If current.next were null, reading <code>.value</code> on it would throw. Short-circuit evaluation is doing real work here.</li>
+    <li><b>Garbage collection:</b> after <code>current.next = current.next.next</code>, nothing points at the removed node, so JavaScript reclaims it. No "free" call needed, which is a nice segue into slide 10.</li>
+  </ul>
+
+  <div class="block checkpoint"><span class="label">Checkpoint 2</span>
+    <p>With 5 → 10 → 20 → 30 on screen: delete <b>20</b> (middle), delete <b>5</b> (head), delete <b>99</b> (returns false, nothing changes). Final picture: 10 → 30 → null, <code>list.size</code> is 2.</p>
+  </div>
+
+  <div class="block watch"><span class="label">Common mistakes</span>
+    <ul>
+      <li>Looping with <code>while (current.value !== value)</code> and then trying to unlink <code>current</code>. You are standing on the node you want to remove and cannot reach the one before it. Rewind to the drawing.</li>
+      <li>Forgetting the not-found case: the loop ends with <code>current.next</code> null and the next line throws "Cannot read properties of null".</li>
+      <li>Typing <code>"20"</code> vs <code>20</code> in the console: the page converts numeric input to numbers so <code>===</code> matches. From the console, pass a number.</li>
+    </ul>
+  </div>
+
+  <div class="block ask"><span class="label">If there is time: insert in the middle</span>
+    <p>Ask the class to describe <code>insertAt(index, value)</code> in words before showing <code>solutions/linked-list.js</code>: walk to the node before the slot, point the new node at what follows, point the previous node at the new node. "Same two-pointer shape as prepend, just further down the chain."</p>
+  </div>
+  <p class="transition">In the next slide, we will explore the operations of traversal and searching within a linked list.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s09" data-slide="9" data-title="Code: traverse + search" data-start="42" data-end="50">
+  <div class="step-head"><span class="slide">Slide 9</span><h2>Operations: Traversal and Search</h2><span class="time">0:42 – 0:50 · 8 min · code-along</span></div>
+  <p class="goal">Goal: students see that every operation so far is the same loop, and can name its cost.</p>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Now that we've covered insertion and deletion, let's discuss how to traverse and search a linked list.</p>
+    <p>Traversal is the process of visiting each node in the list, starting from the head and following the 'next' links until you reach the end, which is indicated by a null value.</p>
+    <p>Searching involves traversing the list and comparing the value of each node with the target value you're looking for.</p>
+  </div>
+
+  <div class="block do"><span class="label">Type: Step 6, traverse(callback) (3 min)</span></div>
+<pre class="code"><code>traverse(callback) {
+  let current = this.head;
+  let index = 0;
+  while (current) {                 // stops when current becomes null
+    callback(current.value, index);
+    current = current.next;
+    index++;
+  }
+}</code></pre>
+  <ul class="why">
+    <li><b>while (current)</b> this time, not <code>while (current.next)</code>: we want to visit the last node too, and stop when we fall off the end into null. Contrast with add().</li>
+    <li>The callback is "what to do at each stop". Console: <code>list.traverse(v => console.log(v))</code>, then press the page's <b>traverse</b> button, which uses a callback that collects values into the log.</li>
+  </ul>
+
+  <div class="block do"><span class="label">Type: Step 7, search(value) (3 min)</span></div>
+<pre class="code"><code>search(value) {
+  let current = this.head;
+  while (current) {
+    if (current.value === value) return current;
+    current = current.next;
+  }
+  return null;
+}</code></pre>
+  <ul class="why">
+    <li>Same loop with an early return. "Traversal plus a question at each node."</li>
+    <li>Returns the <b>node</b>, not the value. Search for 30 on the page: the status shows <code>Node { value: 30, next: null }</code>. Search for 99: <code>null</code>.</li>
+    <li>Bonus if time (1 min): <code>toArray()</code> is traverse with a push. It is in the solutions and handy for the console.</li>
+  </ul>
+
+  <div class="block checkpoint"><span class="label">Checkpoint 3 (end of part 1)</span>
+    <p>Console round-trip: <code>list.add(40).prepend(1)</code>, <code>list.search(40)</code> is a Node, <code>list.search(2)</code> is null, press traverse. Anyone who is behind: tell them <code>solutions/linked-list.js</code> exists and they can paste it in now so they are ready for the exercise.</p>
+  </div>
+
+  <div class="block ask"><span class="label">Ask (the big idea)</span>
+    <p>"Which of our methods needed a loop?" <em>add, delete, traverse, search. Only prepend did not.</em> "So what is the cost of finding the 500th item in an array vs in our list?" <em>Array: one index lookup. List: 499 arrow-follows.</em> That single sentence is the array-vs-list trade-off, and it is the next slide.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s10" data-slide="10" data-title="Memory vs arrays" data-start="50" data-end="54">
+  <div class="step-head"><span class="slide">Slide 10</span><h2>Memory Considerations: Linked Lists vs. Arrays</h2><span class="time">0:50 – 0:54 · 4 min</span></div>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Now, let's shift our focus to memory considerations when choosing between linked lists and arrays.</p>
+    <p>Linked lists employ dynamic memory allocation. This means that memory for each node is allocated during the program's execution. This dynamic approach allows linked lists to expand or contract as needed, providing a great deal of flexibility in managing memory.</p>
+    <p>Arrays, on the other hand, typically require a contiguous block of memory to be allocated at compile time. If the array size is overestimated, it can lead to memory wastage. Conversely, if the size is underestimated, reallocation might be necessary, which can introduce overhead.</p>
+  </div>
+
+  <div class="block note"><span class="label">Accuracy note: say this right after the script</span>
+    <p>"Now, you have all pushed onto a JavaScript array without declaring a size, so 'compile time' sounds wrong. It is describing languages like C. JavaScript arrays grow for you, but the engine does exactly what the slide describes behind your back: it keeps a contiguous block and, when it fills up, allocates a bigger one and copies everything over. You do not see it, you still pay for it. And inserting at the front still shifts every element."</p>
+  </div>
+
+  <div class="block do"><span class="label">Do: put this table on the whiteboard or say it out loud</span>
+    <table>
+      <tr><th>Operation</th><th>Array</th><th>Linked list</th></tr>
+      <tr><td>Get the item at index i</td><td>O(1), jump straight there</td><td>O(n), walk from the head</td></tr>
+      <tr><td>Insert or delete at the front</td><td>O(n), shift everything</td><td>O(1), two pointer moves</td></tr>
+      <tr><td>Insert or delete in the middle (once you are there)</td><td>O(n), shift the rest</td><td>O(1), rewire neighbours</td></tr>
+      <tr><td>Append at the end</td><td>O(1) amortised</td><td>O(n) without a tail pointer, O(1) with one</td></tr>
+      <tr><td>Memory per item</td><td>Just the item, packed together</td><td>Item plus one or two pointers, scattered around</td></tr>
+    </table>
+    <p>"Nodes in a linked list also live wherever the engine put them, so the CPU cache likes arrays much more. In practice arrays win most of the time; linked lists win when you insert and remove a lot at known positions and rarely need 'the 500th item'."</p>
+  </div>
+  <p class="transition">In the next slide, we'll explore some real-world applications of linked lists, highlighting where their unique characteristics make them particularly useful.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s11" data-slide="11" data-title="Real-world uses" data-start="54" data-end="57">
+  <div class="step-head"><span class="slide">Slide 11</span><h2>Real-World Applications: Music Playlists</h2><span class="time">0:54 – 0:57 · 3 min</span></div>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Now, let's explore some real-world applications where linked lists shine.</p>
+    <p>Think about your favorite music player. Ever wonder how it lets you jump to the next song or go back to the previous one so smoothly? Behind the scenes, a doubly linked list is likely at work. Each song in the playlist is a node, with links pointing to the next and previous songs. This makes adding, deleting, or navigating songs a breeze.</p>
+    <p>Similarly, web browsers use linked lists to manage your browsing history. Each webpage you visit is added as a node, allowing you to easily navigate back and forward through your online journey.</p>
+  </div>
+
+  <div class="block ask"><span class="label">Ask</span>
+    <p>"Where else do you have a 'current thing' with a back and a forward?" <em>Undo/redo in an editor, browser tabs' history, photo viewers, the camera roll.</em> "Every one of those is a doubly linked list with a current pointer, which is exactly what you build next."</p>
+  </div>
+
+  <div class="block do"><span class="label">Do</span>
+    <p>Bring the music player tab back up for ten seconds as a preview: press Next, Previous, Play all. "This is the finished version. Yours in 25 minutes."</p>
+  </div>
+  <p class="refs">Refs: <a href="https://medium.com/@ranjan.monisha233/why-linked-lists-exploring-their-real-life-uses-and-hidden-powers-e4469f654d6b">Why linked lists: real-life uses</a> · <a href="https://medium.com/swlh/real-life-example-of-a-linked-list-8f787b660b3f">Real-life example of a linked list</a></p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step exercise" id="s12" data-slide="12" data-title="Exercise: music player" data-start="57" data-end="85">
+  <div class="step-head"><span class="slide">Slide 12</span><h2>In-Class Exercise: Music Player Controls</h2><span class="time">0:57 – 1:25 · 28 min · half together, half solo</span></div>
+  <p class="goal">Goal: a working Previous / Play / Next / Play all using a doubly linked list, and every student can explain why previous() is one line.</p>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>Okay, now that we've covered the real-world applications, let's put your knowledge into practice with an in-class exercise.</p>
+    <p>Your task is to build a simplified music player. The player should have 'next,' 'previous,' and 'play all' controls. You'll be using a doubly linked list to manage the playlist. When each action is performed, the current song title should be displayed. Focus on implementing the core functionalities for navigation and song information display.</p>
+  </div>
+
+  <table>
+    <tr><th>Clock</th><th>What happens</th></tr>
+    <tr><td>0:57 – 1:00</td><td>Frame it. Open <code>starter/music-player/index.html</code> (buttons exist, nothing works, status says "Step 2"). Open <code>player.js</code>: "The UI is done. You write the data structure. The contract is at the top of the file."</td></tr>
+    <tr><td>1:00 – 1:08</td><td><b>Together:</b> SongNode, Playlist constructor, addSong. This is where the new ideas live (prev pointer, tail pointer).</td></tr>
+    <tr><td>1:08 – 1:20</td><td><b>Solo or pairs:</b> play, next, previous, playAll. Circulate. Early finishers take the stretch goals.</td></tr>
+    <tr><td>1:20 – 1:25</td><td>Reveal the solution, discuss the two questions below.</td></tr>
+  </table>
+
+  <div class="block do"><span class="label">Type together: Step 1, SongNode</span></div>
+<pre class="code"><code>class SongNode {
+  constructor(title, artist) {
+    this.title = title;
+    this.artist = artist;
+    this.next = null;   // the song after this one
+    this.prev = null;   // the song before this one. This is what makes it "doubly".
+  }
+}</code></pre>
+
+  <div class="block do"><span class="label">Type together: Step 2, the Playlist shell</span></div>
+<pre class="code"><code>class Playlist {
+  constructor() {
+    this.head = null;      // first song
+    this.tail = null;      // last song. NEW: keeping this makes addSong() instant.
+    this.current = null;   // the song that is "playing"
+    this.length = 0;
+    this.repeat = false;   // stretch goal
+  }
+}</code></pre>
+  <ul class="why">
+    <li><b>tail</b>: "Remember add() walking the whole list? We are not doing that again. We pay one extra pointer on the list and get O(1) append." Refresh: status moves to "Step 3: write addSong".</li>
+    <li><b>current</b>: the needle on the record. All the buttons just move this one pointer.</li>
+  </ul>
+
+  <div class="block do"><span class="label">Type together: Step 3, addSong (this is the hard one, go slow)</span></div>
+<pre class="code"><code>addSong(title, artist) {
+  const song = new SongNode(title, artist);
+
+  if (!this.head) {            // empty playlist: this song is everything
+    this.head = song;
+    this.tail = song;
+    this.current = song;
+  } else {
+    song.prev = this.tail;     // 1. new song looks back at the old last song
+    this.tail.next = song;     // 2. old last song looks forward at the new song
+    this.tail = song;          // 3. the new song is now the end
+  }
+
+  this.length++;
+  return song;
+}</code></pre>
+  <ul class="why">
+    <li>Narrate the three pointer moves with your hands: new song points back, old tail points forward, tail label slides over. Refresh: five seeded songs appear with prev/next cells, tail tag on the last one, first song highlighted as current.</li>
+    <li>Ask: "What goes wrong if step 3 comes before step 2?" <em>this.tail.next = song sets the new song's own next to itself: a one-node loop. The visualizer will even show the loop arrow.</em></li>
+  </ul>
+
+  <div class="block ask"><span class="label">Hand it over (read this out)</span>
+    <p>"Four methods left, and each is shorter than addSong. <b>play()</b> returns current. <b>next()</b> moves current forward if there is a next, and returns current. <b>previous()</b> is the mirror. <b>playAll(callback)</b> is the traverse you wrote an hour ago, starting from head. The buttons tell you which step you are missing. Twelve minutes. If you finish, the stretch goals are at the bottom of the file."</p>
+  </div>
+
+  <div class="block watch"><span class="label">While circulating: hints, not answers</span>
+    <ul>
+      <li>next() on the last song: "What should happen? Stay put. So only move if <code>this.current.next</code> exists." (Repeat mode comes later.)</li>
+      <li>next() when the playlist is empty: current is null, so return null before touching <code>.next</code>.</li>
+      <li>playAll never ending: they are following <code>prev</code>, or forgot <code>song = song.next</code>. The tab freezes. Refresh and re-read the loop.</li>
+      <li>"Play all" shows nothing: playAll must call the callback for each song; the UI collects those and animates them.</li>
+    </ul>
+  </div>
+
+  <details><summary>Solution for the four methods (reveal at 1:20)</summary>
+<pre class="code"><code>play() {
+  return this.current;
+}
+
+next() {
+  if (!this.current) return null;
+  if (this.current.next) {
+    this.current = this.current.next;
+  } else if (this.repeat) {
+    this.current = this.head;    // stretch: wrap around
+  }
+  return this.current;
+}
+
+previous() {
+  if (!this.current) return null;
+  if (this.current.prev) {
+    this.current = this.current.prev;
+  } else if (this.repeat) {
+    this.current = this.tail;    // stretch: wrap around
+  }
+  return this.current;
+}
+
+playAll(callback) {
+  let song = this.head;
+  while (song) {
+    callback(song);
+    song = song.next;
+  }
+}</code></pre>
+  </details>
+
+  <div class="block ask"><span class="label">Discussion at the reveal (2 questions)</span>
+    <ol>
+      <li>"Why is previous() one line here, and what would it cost in our singly linked list from part 1?" <em>Walk from the head until current.next is the current song: O(n). The prev pointer trades memory for speed.</em></li>
+      <li>"Where did the circular linked list from slide 6 show up?" <em>Repeat mode. The wrap-around is circular behaviour done with an if. A true circular list would set tail.next = head and need no special case at all, at the price of having to detect the loop when traversing.</em></li>
+    </ol>
+  </div>
+
+  <div class="block checkpoint"><span class="label">Stretch goals for early finishers</span>
+    <ul>
+      <li><b>Repeat mode:</b> the checkbox already sets <code>playlist.repeat</code>. Make next() and previous() wrap.</li>
+      <li><b>removeCurrent():</b> the Remove button is wired. Four pointer fixes: prev's next, next's prev, and head or tail if the removed song was at an end. Then move current to a neighbour. Full version in the solutions.</li>
+      <li><b>Harder:</b> shuffle that keeps prev/next consistent, or a <code>moveSongUp()</code> that swaps a node with its previous neighbour.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s13" data-slide="13" data-title="Conclusion" data-start="85" data-end="90">
+  <div class="step-head"><span class="slide">Slide 13</span><h2>Conclusion</h2><span class="time">1:25 – 1:30 · 5 min</span></div>
+
+  <div class="block say"><span class="label">Script</span>
+    <p>In conclusion, we've journeyed through the world of linked lists, uncovering their various forms, understanding how to create them, and exploring the operations that can be performed on them.</p>
+    <p>We've also seen how linked lists are applied in real-world scenarios, such as dynamic storage solutions and browser navigation systems.</p>
+    <p>To truly grasp the power and flexibility of linked lists, I encourage you to experiment with them. Try implementing different operations, creating different types of linked lists, and solving problems using linked lists.</p>
+    <p>There's always more to discover in the realm of data structures, so continue your exploration to master this fundamental concept.</p>
+  </div>
+
+  <div class="block ask"><span class="label">Exit ticket (ask out loud, or have them answer in chat)</span>
+    <ol>
+      <li>A node has two parts. Name them. <em>(value/data, next)</em></li>
+      <li>Which is O(1) on a singly linked list: insert at the front, or get the 10th item? <em>(insert at the front)</em></li>
+      <li>What extra pointer makes a list "doubly", and what button did it make possible today? <em>(prev, Previous)</em></li>
+    </ol>
+  </div>
+
+  <div class="block do"><span class="label">Homework / practice ideas</span>
+    <ul>
+      <li>Finish the stretch goals in <code>player.js</code>: repeat mode and removeCurrent().</li>
+      <li>In <code>linked-list.js</code>: <code>insertAt</code>, <code>deleteAt</code>, <code>indexOf</code>, and the classic: <code>reverse()</code> (solution included, worth tracing on paper).</li>
+      <li>Build browser history: a doubly linked list with <code>visit(url)</code>, <code>back()</code>, <code>forward()</code>. Twist: visiting a new page after going back must throw away the "forward" nodes.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="s99" data-slide="Appendix" data-title="Pacing + FAQ" data-start="-1" data-end="-1">
+  <div class="step-head"><span class="slide">Appendix</span><h2>Pacing adjustments and likely questions</h2></div>
+
+  <div class="two">
+    <div class="block watch"><span class="label">If you are 10+ minutes behind at slide 9</span>
+      <ul>
+        <li>Skip typing search(); show it in the solutions file and point out it is traverse with a return.</li>
+        <li>Compress slides 10 and 11 to 3 minutes total using the table.</li>
+        <li>In the exercise, type play/next/previous together as well and make playAll the solo part.</li>
+        <li>Repeat mode and removeCurrent become homework.</li>
+      </ul>
+    </div>
+    <div class="block checkpoint"><span class="label">If you are ahead</span>
+      <ul>
+        <li>After slide 8: live-code insertAt together (5 min).</li>
+        <li>After slide 9: trace reverse() on the whiteboard with three nodes (5 min). It is the single most common linked list interview question.</li>
+        <li>Exercise: everyone does removeCurrent; discuss the four pointer cases.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block ask"><span class="label">Questions students tend to ask</span>
+    <details><summary>"Why not just use an array? JavaScript arrays can do all this."</summary><p>They can, and most of the time you should. The point is the cost model: arrays make index access cheap and front/middle inserts expensive; lists do the opposite. Also, many things that are not called "linked list" are built like one: DOM siblings (<code>nextSibling</code>, <code>previousSibling</code>), undo stacks, LRU caches, the task queue in schedulers.</p></details>
+    <details><summary>"Where does a deleted node go?"</summary><p>Once nothing references it, the garbage collector reclaims it. In C you would have to free it yourself; forgetting to is a memory leak. Keeping a stray reference to it in JavaScript is also a leak.</p></details>
+    <details><summary>"Why does the class store size? Can't we count?"</summary><p>Counting is O(n). Keeping a counter costs one increment per insert or delete and makes <code>size</code> O(1). Same reasoning as the tail pointer: spend a little memory to make a common question cheap.</p></details>
+    <details><summary>"Is a doubly linked list always better than singly?"</summary><p>No. It costs an extra pointer per node and every insert or delete must maintain two links, so there are twice as many ways to get it wrong. Use it when you actually need to go backwards.</p></details>
+    <details><summary>"Can a node point to more than one next?"</summary><p>Yes, and then it is no longer a list. Two children and it is a binary tree; any number and it is a graph. Nice preview of the next units.</p></details>
+    <details><summary>"How does the picture on the page update?"</summary><p><code>visualize.js</code> walks from head following next every 200ms, exactly like traverse(), and redraws only if something changed. It keeps a Set of nodes it has seen so it can detect a loop instead of running forever.</p></details>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+(function () {
+  const sections = [...document.querySelectorAll('section.step')];
+  const timed = sections.filter(s => Number(s.dataset.start) >= 0);
+  const timeline = document.getElementById('timeline');
+  const clockEl = document.getElementById('clock');
+  const planEl = document.getElementById('plan');
+  const paceEl = document.getElementById('pace');
+  const startBtn = document.getElementById('startBtn');
+  const KEY = 'll-teacher-clock';
+  const safe = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+                 set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+                 del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+
+  // ---- Timeline nav ----
+  sections.forEach(s => {
+    const a = document.createElement('a');
+    a.href = '#' + s.id;
+    a.dataset.for = s.id;
+    if (s.classList.contains('exercise')) a.classList.add('exercise');
+    const start = Number(s.dataset.start);
+    const t = start >= 0 ? fmtMin(start) : '';
+    a.innerHTML = `<span class="t">${t}</span><span>${s.dataset.slide}: ${s.dataset.title}</span>`;
+    timeline.appendChild(a);
+  });
+  const links = [...timeline.querySelectorAll('a')];
+
+  // ---- Active section tracking ----
+  let activeId = sections[0].id;
+  function setActive(id) {
+    activeId = id;
+    links.forEach(l => l.classList.toggle('active', l.dataset.for === id));
+    updatePace();
+  }
+  const io = new IntersectionObserver(entries => {
+    const visible = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+    if (visible.length) setActive(visible[0].target.id);
+  }, { rootMargin: '-60px 0px -60% 0px', threshold: 0 });
+  sections.forEach(s => io.observe(s));
+
+  function go(delta) {
+    const i = sections.findIndex(s => s.id === activeId);
+    const next = sections[Math.max(0, Math.min(sections.length - 1, i + delta))];
+    next.scrollIntoView({ block: 'start', behavior: 'instant' });
+    setActive(next.id);
+  }
+
+  // ---- Clock ----
+  // state: { startedAt: ms, pausedElapsed: ms, running: bool }
+  let state = JSON.parse(safe.get(KEY) || 'null') || { startedAt: null, pausedElapsed: 0, running: false };
+
+  function elapsedMs() {
+    return state.pausedElapsed + (state.running && state.startedAt ? Date.now() - state.startedAt : 0);
+  }
+  function fmtMin(m) { return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; }
+  function fmtClock(ms) {
+    const s = Math.floor(ms / 1000);
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  }
+  function toggleClock() {
+    if (state.running) { state.pausedElapsed = elapsedMs(); state.running = false; state.startedAt = null; }
+    else { state.startedAt = Date.now(); state.running = true; }
+    safe.set(KEY, JSON.stringify(state));
+    render();
+  }
+  function resetClock() {
+    state = { startedAt: null, pausedElapsed: 0, running: false };
+    safe.del(KEY);
+    render();
+  }
+  function planSection(minutes) {
+    return timed.find(s => minutes >= Number(s.dataset.start) && minutes < Number(s.dataset.end)) || null;
+  }
+  function updatePace() {
+    const started = state.running || state.pausedElapsed > 0;
+    const active = document.getElementById(activeId);
+    const aStart = Number(active.dataset.start), aEnd = Number(active.dataset.end);
+    if (!started || aStart < 0) { paceEl.hidden = true; return; }
+    const m = elapsedMs() / 60000;
+    paceEl.hidden = false;
+    if (m < aStart) { paceEl.className = 'pace ahead'; paceEl.textContent = `ahead by ${Math.ceil(aStart - m)} min`; }
+    else if (m > aEnd) { paceEl.className = 'pace behind'; paceEl.textContent = `behind by ${Math.ceil(m - aEnd)} min`; }
+    else { paceEl.className = 'pace ok'; paceEl.textContent = 'on plan'; }
+  }
+  function render() {
+    const ms = elapsedMs();
+    clockEl.textContent = fmtClock(ms);
+    startBtn.textContent = state.running ? 'Pause' : (state.pausedElapsed > 0 ? 'Resume' : 'Start class');
+    startBtn.classList.toggle('primary', !state.running);
+    const started = state.running || state.pausedElapsed > 0;
+    const minutes = Math.floor(ms / 60000);
+    const plan = started ? planSection(minutes) : null;
+    links.forEach(l => l.classList.toggle('plan-now', !!plan && l.dataset.for === plan.id));
+    if (!started) planEl.innerHTML = 'Press <b>Start class</b> when you begin slide 1.';
+    else if (plan) planEl.innerHTML = `Plan says: <b>${plan.dataset.slide}, ${plan.dataset.title}</b> (until ${fmtMin(Number(plan.dataset.end))})`;
+    else planEl.innerHTML = minutes >= 90 ? 'Plan says: <b>past 90 minutes</b>' : '';
+    updatePace();
+  }
+  startBtn.addEventListener('click', toggleClock);
+  document.getElementById('resetBtn').addEventListener('click', () => { if (confirm('Reset the lesson clock to 00:00?')) resetClock(); });
+  setInterval(render, 1000);
+  render();
+
+  // ---- Theme + text size ----
+  const root = document.documentElement;
+  const topbar = document.querySelector('.topbar');
+  const measureTop = () => root.style.setProperty('--top', topbar.offsetHeight + 'px');
+  new ResizeObserver(measureTop).observe(topbar);
+  measureTop();
+  const savedTheme = safe.get('ll-theme'); if (savedTheme) root.dataset.theme = savedTheme;
+  const savedFs = safe.get('ll-fs'); if (savedFs) root.style.setProperty('--fs', savedFs + 'px');
+  function toggleTheme() { root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light'; safe.set('ll-theme', root.dataset.theme); }
+  function bumpFs(d) {
+    const cur = parseFloat(getComputedStyle(root).getPropertyValue('--fs')) || 17;
+    const next = Math.max(13, Math.min(26, cur + d));
+    root.style.setProperty('--fs', next + 'px'); safe.set('ll-fs', next);
+  }
+  document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+  document.getElementById('bigger').addEventListener('click', () => bumpFs(1));
+  document.getElementById('smaller').addEventListener('click', () => bumpFs(-1));
+
+  // ---- Keyboard ----
+  document.addEventListener('keydown', e => {
+    if (e.target instanceof Element && e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight' || e.key === 'j') go(1);
+    else if (e.key === 'ArrowLeft' || e.key === 'k') go(-1);
+    else if (e.key === 's' || e.key === 'S') toggleClock();
+    else if (e.key === 't' || e.key === 'T') toggleTheme();
+    else if (e.key === '+' || e.key === '=') bumpFs(1);
+    else if (e.key === '-' || e.key === '_') bumpFs(-1);
+    else return;
+    e.preventDefault();
+  });
+
+  // ---- Checklist persistence ----
+  document.querySelectorAll('.checklist input').forEach((box, i) => {
+    box.checked = safe.get('ll-check-' + i) === '1';
+    box.addEventListener('change', () => safe.set('ll-check-' + i, box.checked ? '1' : '0'));
+  });
+
+  // ---- Tiny syntax highlighter ----
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const re = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(class|constructor|const|let|return|if|else|while|for|new|null|this|true|false|function|throw|typeof|undefined)\b|\b(\d+)\b/gm;
+  document.querySelectorAll('pre.code code').forEach(block => {
+    const code = block.textContent;
+    let out = '', last = 0;
+    for (const m of code.matchAll(re)) {
+      out += esc(code.slice(last, m.index));
+      const cls = m[1] ? 'c' : m[2] ? 's' : m[3] ? 'k' : 'n';
+      out += `<span class="${cls}">${esc(m[0])}</span>`;
+      last = m.index + m[0].length;
+    }
+    out += esc(code.slice(last));
+    block.innerHTML = out;
+  });
+})();
+</script>
+</body>
+</html>
